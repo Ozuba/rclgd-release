@@ -1,0 +1,12 @@
+Source: ros-jazzy-rclgd
+Section: misc
+Priority: optional
+Maintainer: "ozuba" <miguelozubas@gmail.com>
+Build-Depends: debhelper (>= 9.0.0), ros-jazzy-ament-cmake, ros-jazzy-ament-lint-auto <!nocheck>, ros-jazzy-ament-lint-common <!nocheck>, ros-jazzy-geometry-msgs, ros-jazzy-rclcpp, ros-jazzy-ros-babel-fish, ros-jazzy-rosgraph-msgs, ros-jazzy-std-msgs, ros-jazzy-tf2-ros, ros-jazzy-ros-workspace
+Homepage: https://rclgd.readthedocs.io/
+Standards-Version: 3.9.2
+
+Package: ros-jazzy-rclgd
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ros-jazzy-colcon-rclgd, ros-jazzy-geometry-msgs, ros-jazzy-rclcpp, ros-jazzy-rclgd-cli, ros-jazzy-ros-babel-fish, ros-jazzy-ros2launch, ros-jazzy-rosgraph-msgs, ros-jazzy-std-msgs, ros-jazzy-tf2-ros, ros-jazzy-ros-workspace
+Description: GODOT implementation of rclcpp
