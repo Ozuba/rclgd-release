@@ -1,0 +1,10 @@
+ros-jazzy-colcon-rclgd (2.1.0-2noble) noble; urgency=high
+
+  * Initial release: colcon package identification and build task for
+    build_type rclgd (Godot Engine) packages, including headless asset
+    import after install
+  * Contributors: Miguel Oroz Zubasti
+
+ -- "ozuba" <miguelozubas@gmail.com>  Fri, 17 Jul 2026 00:00:00 -0000
+
+
