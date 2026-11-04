@@ -16,13 +16,13 @@ tracks:
       :{release_inc} --os-name rhel
     - git-bloom-generate -y rosdynrpm --prefix release/:{ros_distro} :{ros_distro}
       -i :{release_inc} --require-os fedora rhel
-    devel_branch: main
+    devel_branch: jazzy
     last_version: 2.1.0
     name: upstream
     patches: null
     release_inc: '3'
     release_repo_url: null
-    release_tag: :{version}
+    release_tag: jazzy-:{version}
     ros_distro: jazzy
     vcs_type: git
     vcs_uri: https://github.com/Ozuba/rclgd.git
