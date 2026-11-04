@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>rclgd</name>
-  <version>2.1.0</version>
+  <version>3.0.0</version>
   <description>GODOT implementation of rclcpp</description>
   <maintainer email="miguelozubas@gmail.com">ozuba</maintainer>
   <license>MIT</license>
@@ -15,10 +15,14 @@
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_test</test_depend>
+  <test_depend>example_interfaces</test_depend>
 
   <depend>rclcpp</depend>
+  <depend>rclcpp_action</depend>
   <depend>ros_babel_fish</depend>
   <depend>tf2_ros</depend>
+  <depend>tf2_msgs</depend>
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>rosgraph_msgs</depend>
