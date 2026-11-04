@@ -1,0 +1,12 @@
+Source: ros-jazzy-rclgd-cli
+Section: misc
+Priority: optional
+Maintainer: "ozuba" <miguelozubas@gmail.com>
+Build-Depends: debhelper (>= 9.0.0), ros-jazzy-ament-lint-auto <!nocheck>, ros-jazzy-ament-lint-common <!nocheck>, ros-jazzy-ros-workspace, python3-all, python3-setuptools, dh-python
+Homepage: https://rclgd.readthedocs.io/
+Standards-Version: 3.9.2
+
+Package: ros-jazzy-rclgd-cli
+Architecture: any
+Depends: ${python3:Depends}, ${misc:Depends}, ros-jazzy-ament-index-python, ros-jazzy-ros2cli, ros-jazzy-ros-workspace
+Description: ros2cli extension for rclgd: create/edit Godot packages and manage the Godot runtime
