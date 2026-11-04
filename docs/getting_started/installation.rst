@@ -1,24 +1,47 @@
 Installation
 ============
 
-This guide explains how to build **rclgd** and provision the Godot editor it
-targets.
+There are two ways to get **rclgd**: install the released binary packages from
+apt (recommended for most users) or build the suite from source. Either way you
+do **not** need to install Godot yourself — rclgd pins the exact engine version
+it was compiled against and provisions it for you (see :ref:`godot-setup`).
 
 Prerequisites
 -------------
 
-*   **ROS 2** (developed and tested on Jazzy).
-*   A colcon workspace (e.g. ``~/ros2_ws``).
-*   Build essentials for C++ ROS 2 packages (``colcon``, a compiler, ``rosdep``).
+*   **ROS 2** Jazzy, Kilted, Lyrical or Rolling. Each has its own branch;
+    binary packages are available for Jazzy.
+*   For building from source: a colcon workspace (e.g. ``~/ros2_ws``) and the
+    build essentials for C++ ROS 2 packages (``colcon``, a compiler,
+    ``rosdep``).
 
-You do **not** need to install Godot yourself: rclgd pins the exact engine
-version it was compiled against and downloads it for you (see
-:ref:`godot-setup` below).
+Install from apt (recommended)
+------------------------------
+
+rclgd is published to the ROS 2 build farm, so on a machine with the ROS 2 apt
+repositories configured you can install the whole suite with a single command:
+
+.. code-block:: bash
+
+   sudo apt update
+   sudo apt install ros-jazzy-rclgd
+
+This pulls in all three packages (``ros-jazzy-rclgd``,
+``ros-jazzy-colcon-rclgd`` and ``ros-jazzy-rclgd-cli``) together with the
+pinned Godot editor binary. The install is complete out of the box: nothing to
+provision, no extra step. Source your ROS 2 environment and verify:
+
+.. code-block:: bash
+
+   source /opt/ros/jazzy/setup.bash
+   ros2 rclgd doctor
 
 Building from Source
 --------------------
 
-The repository contains three ROS 2 packages that are built together:
+Build from source on distributions without binary packages, to hack on rclgd
+itself, or to target a different Godot version. The repository contains three
+ROS 2 packages that are built together:
 
 .. list-table::
    :widths: 25 20 55
@@ -37,12 +60,13 @@ The repository contains three ROS 2 packages that are built together:
      - ament_python
      - the ``ros2 rclgd`` command and the project template
 
-1. **Clone the repository** (with the ``godot-cpp`` submodule):
+1. **Clone the branch for your distribution** (``jazzy``, ``kilted``,
+   ``lyrical`` or ``rolling``) with the ``godot-cpp`` submodule:
 
    .. code-block:: bash
 
       cd ~/ros2_ws/src
-      git clone --recurse-submodules https://github.com/Ozuba/rclgd.git
+      git clone -b jazzy --recurse-submodules https://github.com/Ozuba/rclgd.git
 
 2. **Install dependencies** (pulls in ``ros_babel_fish`` among others):
 
@@ -63,11 +87,11 @@ The repository contains three ROS 2 packages that are built together:
 The Godot Editor binary
 -----------------------
 
-The build downloads exactly the engine release librclgd was compiled against
-— verified against a pinned SHA-512 — and installs it into the prefix as
-``lib/rclgd/godot-bin``, right next to ``librclgd.so``. That's the whole
-mechanism: no caches, no environment variables, no extra step; a built (or
-apt-installed) rclgd is complete out of the box.
+The engine binary is provisioned at **build time**: the ``rclgd`` build
+downloads exactly the release ``librclgd.so`` was compiled against (verified
+against a pinned SHA-512) and installs it as ``lib/rclgd/godot-bin``, next to
+``librclgd.so``. There are no caches, environment variables or extra steps, and
+an apt install ships the binary like any other file.
 
 To verify everything is wired up:
 
@@ -76,8 +100,8 @@ To verify everything is wired up:
    ros2 rclgd doctor
 
 ``doctor`` checks the ROS environment, the extension library, the launcher,
-the version pin and the engine binary, and prints a hint for anything that
-is off.
+the version pin and the engine binary (and, run inside a project, the
+project's setup), and prints a hint for anything that is off.
 
 Targeting a different Godot version
 -----------------------------------

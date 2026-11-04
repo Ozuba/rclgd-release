@@ -2,7 +2,6 @@
 
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/classes/engine.hpp>
-#include <godot_cpp/classes/script.hpp>
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -16,6 +15,7 @@
 #include "ros_tf_listener.hpp"
 #include "ros_timer.hpp"
 #include "ros_msg.hpp"
+#include "ros_logger.hpp"
 
 #include "utils/ros_type_utils.hpp"
 #include "utils/ros_tf_utils.hpp"
@@ -32,6 +32,9 @@ private:
     //Parameter update callback
     rclcpp::Node::OnSetParametersCallbackHandle::SharedPtr param_callback_handle_;
 
+    // Cached so once/throttle filter state persists across get_logger() calls
+    Ref<RosLogger> logger_;
+
 protected:
     static void _bind_methods();
 
@@ -46,7 +49,8 @@ public:
     String get_name() const;
     String get_namespace() const;
 
-    // Helper to get ros types from shadow scripts
+    // Resolve the ROS type name from a "pkg/msg/Type" String, a native message
+    // class (RosGeometryMsgsTwist) or a message instance
     String _get_type_from_variant(const Variant &p_type);
 
     // Publisher and subscription creation
@@ -65,7 +69,7 @@ public:
     Ref<RosTimer> create_timer(double p_seconds, const Callable &p_callback);
 
     //TF2 support built in
-    Ref<RosTfListener> create_tf_listener();
+    Ref<RosTfListener> create_tf_listener(double p_cache_time_sec = 10.0);
     Ref<RosTfBroadcaster> create_tf_broadcaster();
     String resolve_frame(const String &p_id);
 
@@ -81,4 +85,7 @@ public:
     Dictionary get_topic_names_and_types();
     int count_publishers(const String &p_topic);
     int count_subscribers(const String &p_topic);
+
+    // Logging through the node's rclcpp logger (console + /rosout)
+    Ref<RosLogger> get_logger() const;
 };
