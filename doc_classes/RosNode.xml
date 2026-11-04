@@ -4,7 +4,7 @@
 		A ROS 2 Node that manages publishers, subscribers, and other communication interfaces.
 	</brief_description>
 	<description>
-		The [RosNode] is the primary interface for interacting with the ROS 2 network. It provides factory methods to create publishers, subscribers, clients, and services, and allows management of node-level parameters and timers.
+		The [RosNode] is the primary interface for interacting with the ROS 2 network. It provides factory methods to create publishers, subscribers, clients, and services, and allows management of node-level parameters and timers. Its ROS 2 logger is available through [method get_logger], so messages reach the console and [code]/rosout[/code] like any other ROS node's.
 		A node must be initialized using [method init] before it can be used to create other communication components.
 	</description>
 	<tutorials>
@@ -41,7 +41,7 @@
 			<param index="3" name="goal_callback" type="Callable" default="Callable()" />
 			<param index="4" name="qos" type="RosQoS" default="null" />
 			<description>
-				Creates and returns a [RosActionServer] for the specified [param action_name] and [param action_type]. Incoming goals are auto-accepted and handed to [param execute_callback] on the main thread as a [RosServerGoalHandle], which must be driven to a terminal state. The [param goal_callback] can optionally be used to reject goals. Use [param qos] to configure the Quality of Service for the action server. See [RosActionServer] for a full example.
+				Creates and returns a [RosActionServer] for the specified [param action_name] and [param action_type]. Accepted goals are handed to [param execute_callback] on the main thread as a [RosServerGoalHandle], which must be driven to a terminal state. Goals are accepted by default; pass [param goal_callback] to decide yourself: it receives the goal [RosMsg] and returns [code]true[/code] to accept. [param goal_callback] runs on a ROS executor thread, not the main thread, so it must not touch nodes or the scene tree. Cancel requests are always accepted. Use [param qos] to configure the Quality of Service for the action server. See [RosActionServer] for a full example.
 			</description>
 		</method>
 		<method name="create_client">
@@ -59,7 +59,7 @@
 			<param index="1" name="type" type="Variant" />
 			<param index="2" name="qos" type="RosQoS" default="null" />
 			<description>
-				Creates and returns a [RosPublisher] to send messages to a specific [param topic]. Use [param qos] to configure the Quality of Service for the publisher.
+				Creates and returns a [RosPublisher] to send messages to a specific [param topic]. [param type] is the message type: an interface name ([code]"geometry_msgs/msg/Twist"[/code]), a typed message class ([code]RosGeometryMsgsTwist[/code]) or a message instance. Use [param qos] to configure the Quality of Service for the publisher.
 			</description>
 		</method>
 		<method name="create_service">
@@ -79,7 +79,7 @@
 			<param index="2" name="callback" type="Callable" />
 			<param index="3" name="qos" type="RosQoS" default="null" />
 			<description>
-				Creates and returns a [RosSubscriber] to receive messages from a specific [param topic]. The [param callback] is triggered for every new message received, always on the Godot main thread. Use [param qos] to configure the Quality of Service for the subscription.
+				Creates and returns a [RosSubscriber] to receive messages from a specific [param topic]. [param type] is given as for [method create_publisher]. The [param callback] is triggered for every new message received, always on the Godot main thread; messages of a type with a typed class arrive as that class (see [RosMsg]). Use [param qos] to configure the Quality of Service for the subscription.
 			</description>
 		</method>
 		<method name="create_tf_broadcaster">
@@ -90,8 +90,10 @@
 		</method>
 		<method name="create_tf_listener">
 			<return type="RosTfListener" />
+			<param index="0" name="cache_time_sec" type="float" default="10.0" />
 			<description>
 				Creates and returns a [RosTfListener] for looking up coordinate transforms in the TF2 system.
+				[param cache_time_sec] is how far back the buffer keeps transforms, which bounds how old a [method RosTfListener.lookup_transform] stamp may be. Raise it when replaying a bag or when data arrives well behind TF.
 			</description>
 		</method>
 		<method name="create_timer">
@@ -108,6 +110,16 @@
 			<param index="1" name="default_value" type="Variant" />
 			<description>
 				Declares a parameter on the node with a [param default_value]. Parameters must be declared before they can be retrieved or modified by external tools.
+			</description>
+		</method>
+		<method name="get_logger" qualifiers="const">
+			<return type="RosLogger" />
+			<description>
+				Returns the node's [RosLogger], named after the node. Messages logged through it go to the console and [code]/rosout[/code]. The same instance is returned on every call, so [code]once[/code], [code]skip_first[/code] and [code]throttle_duration_sec[/code] filter state is kept. Equivalent to rclpy's [code]Node.get_logger()[/code].
+				[codeblock]
+				var logger := ros_node.get_logger()
+				logger.info("Simulation started")
+				[/codeblock]
 			</description>
 		</method>
 		<method name="get_name" qualifiers="const">
