@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RosTfListener" inherits="RefCounted" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A listener for coordinate transforms in the ROS 2 TF2 system.
+	</brief_description>
+	<description>
+		[RosTfListener] allows Godot to query the current spatial relationships between different coordinate frames in the ROS 2 TF2 tree. It is created through [method RosNode.create_tf_listener].
+		By listening for transforms, you can determine the position and rotation of robot parts, sensors, or other objects relative to each other or a global frame.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="can_transform" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="target_frame" type="String" />
+			<param index="1" name="source_frame" type="String" />
+			<description>
+				Returns [code]true[/code] if a transformation between [param source_frame] and [param target_frame] is currently available in the TF2 tree.
+			</description>
+		</method>
+		<method name="lookup_transform">
+			<return type="Variant" />
+			<param index="0" name="target_frame" type="String" />
+			<param index="1" name="source_frame" type="String" />
+			<param index="2" name="timeout_sec" type="float" default="0.0" />
+			<description>
+				Attempts to find the coordinate transformation from [param source_frame] to [param target_frame]. Returns a [Transform3D] (already converted to the Godot axis convention) representing the position and orientation of the source frame relative to the target frame.
+				Returns [code]null[/code] if the transform is not available, so a failed lookup can be distinguished from a genuine identity transform. If [param timeout_sec] is greater than zero, the lookup blocks for up to that long waiting for the transform to become available (only useful when the executor runs in its default separate thread).
+			</description>
+		</method>
+	</methods>
+</class>
