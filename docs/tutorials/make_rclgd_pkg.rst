@@ -23,9 +23,8 @@ The generated package contains:
     ├── project.godot        # Godot project (named after the package)
     ├── main.tscn / main.gd  # demo scene: a publisher + subscriber on /chatter
     ├── .gitignore           # ignores .godot/ import artifacts
-    └── addons/rclgd/        # the rclgd editor addon
-        ├── plugin.cfg
-        ├── rclgd.gd         # editor plugin: generates typed message wrappers
+    └── addons/rclgd/        # the rclgd addon
+        ├── icon.svg         # class icons
         ├── ros_init.gd      # autoload: initializes the ROS context at game start
         └── bin/rclgd.gdextension
 
@@ -61,12 +60,13 @@ Key elements:
 
 *   **build_type**: Must be set to ``rclgd``. This triggers the custom build logic.
 *   **buildtool_depend**: Adding ``rclgd`` ensures that the build tool extension is available.
-*   **depend**: Message packages your project uses. Besides declaring the
-    runtime dependency, these drive the automatic generation of typed GDScript
-    wrappers in the editor (see :doc:`/tutorials/custom_messages`).
+*   **depend**: Interface packages your project uses. Besides declaring the
+    runtime dependency, these decide which typed message classes rclgd
+    registers at startup (see :doc:`/tutorials/custom_messages`).
 
-You will also need the ``addons/rclgd`` folder — copy it from a freshly
-created package (``ros2 rclgd create``).
+You will also need the ``addons/rclgd`` folder and the ``ROS`` autoload entry
+in ``project.godot`` — copy both from a freshly created package
+(``ros2 rclgd create``).
 
 How Colcon Integration Works
 ----------------------------

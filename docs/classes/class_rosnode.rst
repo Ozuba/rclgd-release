@@ -19,7 +19,7 @@ A ROS 2 Node that manages publishers, subscribers, and other communication inter
 Description
 -----------
 
-The **RosNode** is the primary interface for interacting with the ROS 2 network. It provides factory methods to create publishers, subscribers, clients, and services, and allows management of node-level parameters and timers.
+The **RosNode** is the primary interface for interacting with the ROS 2 network. It provides factory methods to create publishers, subscribers, clients, and services, and allows management of node-level parameters and timers. Its ROS 2 logger is available through :ref:`get_logger()<class_RosNode_method_get_logger>`, so messages reach the console and ``/rosout`` like any other ROS node's.
 
 A node must be initialized using :ref:`init()<class_RosNode_method_init>` before it can be used to create other communication components.
 
@@ -50,11 +50,13 @@ Methods
    +---------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
    | :ref:`RosTfBroadcaster<class_RosTfBroadcaster>`                                       | :ref:`create_tf_broadcaster<class_RosNode_method_create_tf_broadcaster>`\ (\ )                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
    +---------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-   | :ref:`RosTfListener<class_RosTfListener>`                                             | :ref:`create_tf_listener<class_RosNode_method_create_tf_listener>`\ (\ )                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+   | :ref:`RosTfListener<class_RosTfListener>`                                             | :ref:`create_tf_listener<class_RosNode_method_create_tf_listener>`\ (\ cache_time_sec\: `float <https://docs.godotengine.org/en/stable/classes/class_float.html>`__ = 10.0\ )                                                                                                                                                                                                                                                                                                                                                            |
    +---------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
    | :ref:`RosTimer<class_RosTimer>`                                                       | :ref:`create_timer<class_RosNode_method_create_timer>`\ (\ seconds\: `float <https://docs.godotengine.org/en/stable/classes/class_float.html>`__, callback\: `Callable <https://docs.godotengine.org/en/stable/classes/class_callable.html>`__\ )                                                                                                                                                                                                                                                                                        |
    +---------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
    | |void|                                                                                | :ref:`declare_parameter<class_RosNode_method_declare_parameter>`\ (\ name\: `String <https://docs.godotengine.org/en/stable/classes/class_string.html>`__, default_value\: `Variant <https://docs.godotengine.org/en/stable/classes/class_variant.html>`__\ )                                                                                                                                                                                                                                                                            |
+   +---------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+   | :ref:`RosLogger<class_RosLogger>`                                                     | :ref:`get_logger<class_RosNode_method_get_logger>`\ (\ ) |const|                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
    +---------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
    | `String <https://docs.godotengine.org/en/stable/classes/class_string.html>`__         | :ref:`get_name<class_RosNode_method_get_name>`\ (\ ) |const|                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
    +---------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -141,7 +143,7 @@ Creates and returns a :ref:`RosActionClient<class_RosActionClient>` for the spec
 
 :ref:`RosActionServer<class_RosActionServer>` **create_action_server**\ (\ action_name\: `String <https://docs.godotengine.org/en/stable/classes/class_string.html>`__, action_type\: `Variant <https://docs.godotengine.org/en/stable/classes/class_variant.html>`__, execute_callback\: `Callable <https://docs.godotengine.org/en/stable/classes/class_callable.html>`__, goal_callback\: `Callable <https://docs.godotengine.org/en/stable/classes/class_callable.html>`__ = Callable(), qos\: :ref:`RosQoS<class_RosQoS>` = null\ ) :ref:`🔗<class_RosNode_method_create_action_server>`
 
-Creates and returns a :ref:`RosActionServer<class_RosActionServer>` for the specified ``action_name`` and ``action_type``. Incoming goals are auto-accepted and handed to ``execute_callback`` on the main thread as a :ref:`RosServerGoalHandle<class_RosServerGoalHandle>`, which must be driven to a terminal state. The ``goal_callback`` can optionally be used to reject goals. Use ``qos`` to configure the Quality of Service for the action server. See :ref:`RosActionServer<class_RosActionServer>` for a full example.
+Creates and returns a :ref:`RosActionServer<class_RosActionServer>` for the specified ``action_name`` and ``action_type``. Accepted goals are handed to ``execute_callback`` on the main thread as a :ref:`RosServerGoalHandle<class_RosServerGoalHandle>`, which must be driven to a terminal state. Goals are accepted by default; pass ``goal_callback`` to decide yourself: it receives the goal :ref:`RosMsg<class_RosMsg>` and returns ``true`` to accept. ``goal_callback`` runs on a ROS executor thread, not the main thread, so it must not touch nodes or the scene tree. Cancel requests are always accepted. Use ``qos`` to configure the Quality of Service for the action server. See :ref:`RosActionServer<class_RosActionServer>` for a full example.
 
 .. rst-class:: classref-item-separator
 
@@ -165,7 +167,7 @@ Creates and returns a :ref:`RosClient<class_RosClient>` for the specified servic
 
 :ref:`RosPublisher<class_RosPublisher>` **create_publisher**\ (\ topic\: `String <https://docs.godotengine.org/en/stable/classes/class_string.html>`__, type\: `Variant <https://docs.godotengine.org/en/stable/classes/class_variant.html>`__, qos\: :ref:`RosQoS<class_RosQoS>` = null\ ) :ref:`🔗<class_RosNode_method_create_publisher>`
 
-Creates and returns a :ref:`RosPublisher<class_RosPublisher>` to send messages to a specific ``topic``. Use ``qos`` to configure the Quality of Service for the publisher.
+Creates and returns a :ref:`RosPublisher<class_RosPublisher>` to send messages to a specific ``topic``. ``type`` is the message type: an interface name (``"geometry_msgs/msg/Twist"``), a typed message class (``RosGeometryMsgsTwist``) or a message instance. Use ``qos`` to configure the Quality of Service for the publisher.
 
 .. rst-class:: classref-item-separator
 
@@ -189,7 +191,7 @@ Creates and returns a :ref:`RosService<class_RosService>` server for the specifi
 
 :ref:`RosSubscriber<class_RosSubscriber>` **create_subscription**\ (\ topic\: `String <https://docs.godotengine.org/en/stable/classes/class_string.html>`__, type\: `Variant <https://docs.godotengine.org/en/stable/classes/class_variant.html>`__, callback\: `Callable <https://docs.godotengine.org/en/stable/classes/class_callable.html>`__, qos\: :ref:`RosQoS<class_RosQoS>` = null\ ) :ref:`🔗<class_RosNode_method_create_subscription>`
 
-Creates and returns a :ref:`RosSubscriber<class_RosSubscriber>` to receive messages from a specific ``topic``. The ``callback`` is triggered for every new message received, always on the Godot main thread. Use ``qos`` to configure the Quality of Service for the subscription.
+Creates and returns a :ref:`RosSubscriber<class_RosSubscriber>` to receive messages from a specific ``topic``. ``type`` is given as for :ref:`create_publisher()<class_RosNode_method_create_publisher>`. The ``callback`` is triggered for every new message received, always on the Godot main thread; messages of a type with a typed class arrive as that class (see :ref:`RosMsg<class_RosMsg>`). Use ``qos`` to configure the Quality of Service for the subscription.
 
 .. rst-class:: classref-item-separator
 
@@ -211,9 +213,11 @@ Creates and returns a :ref:`RosTfBroadcaster<class_RosTfBroadcaster>` for publis
 
 .. rst-class:: classref-method
 
-:ref:`RosTfListener<class_RosTfListener>` **create_tf_listener**\ (\ ) :ref:`🔗<class_RosNode_method_create_tf_listener>`
+:ref:`RosTfListener<class_RosTfListener>` **create_tf_listener**\ (\ cache_time_sec\: `float <https://docs.godotengine.org/en/stable/classes/class_float.html>`__ = 10.0\ ) :ref:`🔗<class_RosNode_method_create_tf_listener>`
 
 Creates and returns a :ref:`RosTfListener<class_RosTfListener>` for looking up coordinate transforms in the TF2 system.
+
+\ ``cache_time_sec`` is how far back the buffer keeps transforms, which bounds how old a :ref:`RosTfListener.lookup_transform()<class_RosTfListener_method_lookup_transform>` stamp may be. Raise it when replaying a bag or when data arrives well behind TF.
 
 .. rst-class:: classref-item-separator
 
@@ -238,6 +242,23 @@ Creates and returns a :ref:`RosTimer<class_RosTimer>` that triggers the ``callba
 |void| **declare_parameter**\ (\ name\: `String <https://docs.godotengine.org/en/stable/classes/class_string.html>`__, default_value\: `Variant <https://docs.godotengine.org/en/stable/classes/class_variant.html>`__\ ) :ref:`🔗<class_RosNode_method_declare_parameter>`
 
 Declares a parameter on the node with a ``default_value``. Parameters must be declared before they can be retrieved or modified by external tools.
+
+.. rst-class:: classref-item-separator
+
+----
+
+.. _class_RosNode_method_get_logger:
+
+.. rst-class:: classref-method
+
+:ref:`RosLogger<class_RosLogger>` **get_logger**\ (\ ) |const| :ref:`🔗<class_RosNode_method_get_logger>`
+
+Returns the node's :ref:`RosLogger<class_RosLogger>`, named after the node. Messages logged through it go to the console and ``/rosout``. The same instance is returned on every call, so ``once``, ``skip_first`` and ``throttle_duration_sec`` filter state is kept. Equivalent to rclpy's ``Node.get_logger()``.
+
+::
+
+    var logger := ros_node.get_logger()
+    logger.info("Simulation started")
 
 .. rst-class:: classref-item-separator
 
