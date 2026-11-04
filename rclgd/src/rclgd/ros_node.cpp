@@ -36,7 +36,8 @@ void RosNode::_bind_methods()
                          &RosNode::create_action_server,
                          DEFVAL(Callable()), DEFVAL(Ref<RosQoS>()));
     ClassDB::bind_method(D_METHOD("create_tf_broadcaster"), &RosNode::create_tf_broadcaster);
-    ClassDB::bind_method(D_METHOD("create_tf_listener"), &RosNode::create_tf_listener);
+    ClassDB::bind_method(D_METHOD("create_tf_listener", "cache_time_sec"), &RosNode::create_tf_listener,
+                         DEFVAL(10.0));
     ClassDB::bind_method(D_METHOD("create_timer", "seconds", "callback"), &RosNode::create_timer);
 
     // Functions
@@ -51,6 +52,9 @@ void RosNode::_bind_methods()
     ClassDB::bind_method(D_METHOD("get_topic_names_and_types"), &RosNode::get_topic_names_and_types);
     ClassDB::bind_method(D_METHOD("count_publishers", "topic"), &RosNode::count_publishers);
     ClassDB::bind_method(D_METHOD("count_subscribers", "topic"), &RosNode::count_subscribers);
+
+    // Logging
+    ClassDB::bind_method(D_METHOD("get_logger"), &RosNode::get_logger);
 
     //Helpers
     ClassDB::bind_method(D_METHOD("resolve_frame", "frame_id"), &RosNode::resolve_frame);
@@ -88,6 +92,7 @@ void RosNode::init(const String &p_node_name, const String &p_namespace)
            3. node_name contains illegal characters.
         */
         node_ = std::make_shared<rclcpp::Node>(std_name, std_ns);
+        logger_ = RosLogger::wrap(node_->get_logger());
     }
     catch (const std::exception &e)
     {
@@ -106,9 +111,12 @@ void RosNode::init(const String &p_node_name, const String &p_namespace)
         RCLGD_FAIL_MSG("RCLGD: Global singleton not found. Node will not be processed by the executor.");
     }
 
-    // Setup Parameter update callback
+    // Setup Parameter update callback. The rclcpp node can outlive this
+    // RosNode (TF objects share it), so the callback reaches us through a
+    // Callable, which only refers to this object by id, not through `this`.
+    Callable emit = Callable(this, "emit_signal");
     param_callback_handle_ = node_->add_on_set_parameters_callback(
-        [this](const std::vector<rclcpp::Parameter> &parameters)
+        [emit](const std::vector<rclcpp::Parameter> &parameters)
         {
             rcl_interfaces::msg::SetParametersResult result;
             result.successful = true;
@@ -118,7 +126,7 @@ void RosNode::init(const String &p_node_name, const String &p_namespace)
                 Variant val = RosTypeMapping::ros_param_to_variant(param);
 
                 // Emit signal on Godot thread to remain thread-safe with the UI/Editor
-                this->call_deferred("emit_signal", "parameter_changed", String(param.get_name().c_str()), val);
+                emit.call_deferred("parameter_changed", String(param.get_name().c_str()), val);
             }
             return result;
         });
@@ -211,14 +219,23 @@ String RosNode::_get_type_from_variant(const Variant &p_type) {
         return p_type;
     }
 
-    // Handle Objects (Scripts or Instances)
-    if (p_type.get_type() == Variant::OBJECT) {
-        Ref<Script> scr = p_type;
-        if (scr.is_valid()) {
-            Dictionary constants = scr->get_script_constant_map();
-            if (constants.has("ROS_TYPE_NAME")) {
-                return constants["ROS_TYPE_NAME"];
-            }
+    Object *obj = p_type.get_validated_object();
+    if (!obj) {
+        return ""; // Failed to resolve
+    }
+
+    // A message instance knows its own type
+    if (RosMsg *msg = Object::cast_to<RosMsg>(obj)) {
+        return msg->get_ros_interface_name();
+    }
+
+    // A native class used as a value (`create_publisher(t, RosGeometryMsgsTwist)`)
+    // reaches us as GDScript's class reference, which exposes no class name, so
+    // build one throwaway instance and ask it. Only at entity creation, not per message.
+    if (obj->is_class("GDScriptNativeClass")) {
+        Ref<RosMsg> msg = obj->call("new");
+        if (msg.is_valid()) {
+            return msg->get_ros_interface_name();
         }
     }
     return ""; // Failed to resolve
@@ -300,13 +317,13 @@ Ref<RosTfBroadcaster> RosNode::create_tf_broadcaster()
     return bc;
 }
 
-Ref<RosTfListener> RosNode::create_tf_listener()
+Ref<RosTfListener> RosNode::create_tf_listener(double p_cache_time_sec)
 {
     RCLGD_FAIL_COND_V_MSG(!rclcpp::ok(), nullptr, "ROS2 Global Context is not OK. Did it shut down?");
     RCLGD_FAIL_COND_V_MSG(!node_, nullptr, "RosNode must be initialized before creating TF Listeners.");
     Ref<RosTfListener> ls;
     ls.instantiate();
-    ls->setup(node_);
+    ls->setup(node_, p_cache_time_sec);
     return ls;
 }
 
@@ -326,18 +343,16 @@ String RosNode::resolve_frame(const String &p_id) {
 
 Ref<RosMsg> RosNode::now()
 {
-    // 1. Create the specific ROS Time message
-    Ref<RosMsg> time_msg;
-    time_msg.instantiate();
-    time_msg->init("builtin_interfaces/msg/Time");
+    // 1. Create the specific ROS Time message (typed when registered)
+    Ref<RosMsg> time_msg = RosMsg::from_type("builtin_interfaces/msg/Time");
 
-    if (node_)
+    if (node_ && time_msg.is_valid())
     {
         // Derive both fields from the integer nanosecond count to avoid any
         // floating point rounding mismatch at second boundaries.
         int64_t ns = node_->now().nanoseconds();
-        time_msg->set("sec", (int64_t)(ns / 1000000000));
-        time_msg->set("nanosec", (int64_t)(ns % 1000000000));
+        time_msg->set_member("sec", (int64_t)(ns / 1000000000));
+        time_msg->set_member("nanosec", (int64_t)(ns % 1000000000));
     }
 
     return time_msg;
@@ -377,4 +392,10 @@ int RosNode::count_subscribers(const String &p_topic)
     ERR_FAIL_COND_V(!node_, 0);
     std::string topic = p_topic.utf8().get_data();
     return static_cast<int>(node_->count_subscribers(topic));
+}
+
+Ref<RosLogger> RosNode::get_logger() const
+{
+    RCLGD_FAIL_COND_V_MSG(!node_, Ref<RosLogger>(), "RosNode must be initialized before getting its logger.");
+    return logger_;
 }

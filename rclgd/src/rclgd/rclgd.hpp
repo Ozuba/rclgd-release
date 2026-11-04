@@ -22,6 +22,7 @@
 
 //So all other classes have access to macros
 #include "utils/rclgd_macros.hpp"
+#include "ros_logger.hpp"
 
 using namespace godot;
 using namespace ros_babel_fish;
@@ -94,6 +95,11 @@ public:
 
     bool ok() const { return is_running_; }
 
+    // Whether the executor runs on its own thread. TF2 needs to know: it
+    // refuses to honour a lookup timeout unless something other than the
+    // calling thread is filling the buffer.
+    bool uses_separate_thread() const { return use_separate_thread_; }
+
     // RCLGD node accessor
     std::shared_ptr<rclcpp::Node> get_rclgd_node() const { return rclgd_node_; }
 
@@ -109,6 +115,12 @@ public:
     Vector3 ros_to_godot_vector(const Vector3 &p_v) const;
     Quaternion godot_to_ros_quat(const Quaternion &p_q) const;
     Quaternion ros_to_godot_quat(const Quaternion &p_q) const;
+
+    // Logging helpers mirroring the rclpy.logging module
+    Ref<RosLogger> get_logger(const String &p_name) const;
+    void set_logger_level(const String &p_name, RosLogger::LoggingSeverity p_level);
+    RosLogger::LoggingSeverity get_logger_effective_level(const String &p_name) const;
+    RosLogger::LoggingSeverity get_logging_severity_from_string(const String &p_severity) const;
 };
 
 #endif
