@@ -82,8 +82,11 @@ install(PROGRAMS cmake/godot-launcher.sh DESTINATION lib/${PROJECT_NAME} RENAME 
 
 find_package(ros_babel_fish REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(std_msgs REQUIRED)
+find_package(rclcpp_action REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(tf2_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(rosgraph_msgs REQUIRED)
 
 # Build godot-cpp
 # Need shaderd libstdc to catch external exception errors from babel_fish or other dloaded libs
@@ -100,7 +103,6 @@ target_compile_options(godot_cpp_no_cmake_warnings INTERFACE -w)
 
 
 # Extension Source
-include_directories(src ${rclcpp_INCLUDE_DIRS} ${ros_babel_fish_INCLUDE_DIRS} ${std_msgs_INCLUDE_DIRS})
 
 # Fetch a list of the xml files to use for documentation and add to our target
 file(GLOB_RECURSE DOC_XML LIST_DIRECTORIES NO CONFIGURE_DEPENDS "doc_classes/*.xml")
@@ -111,6 +113,7 @@ target_sources(rclgd PRIVATE
     # RCLGD
     src/rclgd/rclgd.cpp
     src/rclgd/ros_msg.cpp
+    src/rclgd/ros_type_registry.cpp
     src/rclgd/ros_node.cpp
     src/rclgd/ros_publisher.cpp
     src/rclgd/ros_subscriber.cpp
@@ -122,6 +125,7 @@ target_sources(rclgd PRIVATE
     src/rclgd/ros_tf_listener.cpp
     src/rclgd/ros_qos.cpp
     src/rclgd/ros_timer.cpp
+    src/rclgd/ros_logger.cpp
 
     # Type Registration
     src/register_types.cpp
@@ -130,8 +134,17 @@ target_sources(rclgd PRIVATE
 # Add docs sources
 target_doc_sources(rclgd "${DOC_XML}")
 
-ament_target_dependencies(rclgd rclcpp ros_babel_fish tf2_ros)
-target_link_libraries(rclgd godot_cpp_no_cmake_warnings)
+target_include_directories(rclgd PRIVATE src)
+# Modern CMake targets: ament_target_dependencies is removed in Lyrical
+target_link_libraries(rclgd
+    rclcpp::rclcpp
+    rclcpp_action::rclcpp_action
+    ros_babel_fish::ros_babel_fish
+    tf2_ros::tf2_ros
+    ${tf2_msgs_TARGETS}
+    ${geometry_msgs_TARGETS}
+    ${rosgraph_msgs_TARGETS}
+    godot_cpp_no_cmake_warnings)
 
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -139,6 +152,22 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 
+
+#####################################################[ TESTING ]####################################################################
+
+if(BUILD_TESTING)
+    # Headless system tests: the GDScript suite in test/project runs against
+    # the freshly built library and engine, straight from the build tree.
+    set(_godot_tests_result "${AMENT_TEST_RESULTS_DIR}/${PROJECT_NAME}/godot_system_tests.xunit.xml")
+    ament_add_test(godot_system_tests
+        COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/test/run_tests.sh"
+            "${CMAKE_CURRENT_BINARY_DIR}/godot-engine/${_godot_name}"
+            "$<TARGET_FILE:rclgd>"
+            "${CMAKE_CURRENT_SOURCE_DIR}/test/project"
+            "--junit=${_godot_tests_result}"
+        RESULT_FILE "${_godot_tests_result}"
+        TIMEOUT 300)
+endif()
 
 #####################################################[ INSTALLATION ]###############################################################
 
